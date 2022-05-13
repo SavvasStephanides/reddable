@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        async function getData(){
+            // let url = "https://www.reddit.com/r/fatlogic/comments/umjdq2/fat_rant_tuesday.json?sort=confidence"
+            // let url = `https://www.reddit.com/r/AskReddit/comments/uolu1c/whats_the_dumbest_thing_you_believed_as_a_kid.json`
+            let queryUrl = new URLSearchParams(location.search).get('url')
+            let urlData = new URL(queryUrl)
+            let url = `${urlData.origin}${urlData.pathname}.json?sort=confidence`
+
+            let response = await fetch(url)
+            let data = await response.json()
+
+            let postTitle = data[0].data.children[0].data.title
+            let subreddit = data[0].data.children[0].data.subreddit
+
+            let replies = data[1].data.children
+                .map(child => child.data)
+                .filter(child => child.stickied === false)
+                .map((child) => {
+                    return {
+                        comment: child.body,
+                        author: child.author
+                    }
+                })
+            
+            return {
+                title: postTitle,
+                subreddit,
+                replies
+            }
+        }
+        getData().then(r => {
+            document.querySelector("#post-title").innerText = r.title
+            document.querySelector("#subreddit").innerText = r.subreddit
+            document.querySelector("#comments").innerHTML = r.replies.map((reply) => `
+            <div class="comment">
+                <div class="content">
+                <div class="text">${reply.comment}</div>
+                </div>
+            </div>`)
+                .join("")
+        })
+
+    </script>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+
+        #app{
+            
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            scroll-snap-type: y mandatory;
+        }
+
+        header,
+        #comments .comment{
+            background-color: rgb(209, 224, 224);
+            height: 100vh;
+            scroll-snap-align: start;
+        }
+
+        header{
+            display: flex;
+            padding: 30px;
+        }
+
+        header .content{
+            margin: auto;
+        }
+
+        header .content #subreddit{
+            margin-top: 15px;
+            font-size: 21px;
+        }
+
+        #comments .comment {
+            background-color: rgb(164, 113, 212);
+            display: flex;
+        }
+
+        #comments .comment .content{
+            background-color: blueviolet;
+            color: white;
+            line-height: 1.5;
+            overflow-y: auto;
+            font-size: 21px;
+            width: calc(100% - 60px);
+            max-width: 900px;
+            height: calc(100% - 60px);
+            margin: auto;
+        }
+
+        #comments .comment .content .text{
+            padding: 30px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="content">
+                <h1 id="post-title"></h1>
+                <div id="subreddit"></div>
+            </div>
+        </header>
+        <section id="comments">
+
+        </section>
+    </div>
+</body>
+</html>
